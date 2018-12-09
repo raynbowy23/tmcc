@@ -1,6 +1,4 @@
-#include <stdio.h>
+//
+// Created by ryoppippi on 2018/12/09.
+//
 
-int main() {
-    printf("Hello, World!\n");
-    return 0;
-}
