@@ -189,6 +189,10 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
+*~
+*.o
+tmp*
+tmcc
 
 
 
