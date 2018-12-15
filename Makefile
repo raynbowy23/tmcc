@@ -1,7 +1,15 @@
-tmcc: tmcc.c
+CFLAGS=-Wall -std=c11
+SRCS=$(wildcard *.c)
+OBJS=$(SRCS:.c=.o)
+
+tmcc: $(OBJS)
+
+$(OBJS): tmcc.h
 
 test: tmcc
-        ./test.sh
+			./tmcc -test
+			./test.sh
 
 clean:
-        rm -f 9cc *.o *~ tmp*
+			rm -f tmcc *.o *~ tmp*
+			

@@ -1,134 +1,14 @@
+#include "tmcc.h"
 #include <ctype.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-//トークンの型を表す値
-enum{
-    TK_NUM = 256, //整数トークン
-    TK_EOF,       //入力の終わりを表すトークン
-};
-
-//トークンの型
-typedef struct{
-    int ty;      //トークンの型
-    int val;     //tyがTK_NUMの場合、その数値
-    char *input; //トークン文字列（エラーメッセージ用）
-}Token;
-
-enum{
-    ND_NUM = 256,   //整数のノードの型
-};
-
-typedef struct Node{
-    int op;             //演算子かND_NUM
-    struct Node *lhs;   //左辺
-    struct Node *rhs;   //右辺
-    int val;            //tyがND_NUMの場合のみ使う
-}Node;
-
-Node *expr();
-Node *mul();
-Node *term();
-Node *new_node_num(int val);
-Node *new_node(int op, Node *lhs, Node *rhs);
-void gen(Node *node);
-void tokenize(char *p);
-void error();
-
 //トークナイズした結果のトークン列はこの配列に保存する
 //100個以上のトークンは来ないものとする
 Token tokens[100];
-int pos = 0;
-
-Node *new_node(int op, Node *lhs, Node *rhs){
-    Node *node = malloc(sizeof(Node));
-    node->op = op;
-    node->lhs = lhs;
-    node->rhs = rhs;
-    return node;
-}
-
-Node *new_node_num(int val){
-    Node *node = malloc(sizeof(Node));
-    node->op = ND_NUM;
-    node->val = val;
-    return node;
-}
-
-Node *expr(){
-    Node *lhs = mul();
-    if(tokens[pos].ty == TK_EOF)
-        return lhs;
-    if(tokens[pos].ty == '+'){
-        pos++;
-        return new_node('+', lhs, expr());
-    }
-    if(tokens[pos].ty == '-'){
-        pos++;
-        return new_node('-', lhs, expr());
-    }
-    return lhs;
-}
-
-Node *mul(){
-    Node *lhs = term();
-    if(tokens[pos].ty == TK_EOF)
-        return lhs;
-    if(tokens[pos].ty == '*'){
-        pos++;
-        return new_node('*', lhs, mul());
-    }
-    if(tokens[pos].ty == '/'){
-        pos++;
-        return new_node('/', lhs, mul());
-    }
-    return lhs;
-}
-
-Node *term(){
-    if(tokens[pos].ty == TK_NUM)
-        return new_node_num(tokens[pos++].val);
-    if(tokens[pos].ty == '('){
-        pos++;
-        Node *node = expr();
-        if(tokens[pos].ty != ')')
-            error("開き括弧に対応する閉じ括弧がありません: %s", tokens[pos].input);
-        pos++;
-        return node;
-    }
-    error("数値でも開き括弧でもないトークンです: %s", tokens[pos].input);
-}
-
-void gen(Node *node){
-    if(node->op == ND_NUM){
-        printf("    push %d\n", node->val);
-        return;
-    }
-
-    gen(node->lhs);
-    gen(node->rhs);
-
-    printf("    pop rdi\n");
-    printf("    pop rax\n");
-
-    switch(node->op){
-    case '+':
-        printf("    add rax, rdi\n");
-        break;
-    case '-':
-        printf("    sub rax, rdi\n");
-        break;
-    case '*':
-        printf("    mul rdi\n");
-        break;
-    case '/':
-        printf("    mov rdx, 0\n");
-        printf("    div rdi\n");
-    }
-
-    printf("    push rax\n");
-}
+Node *code[100];
 
 //pが指している文字列をトークンに分割してtokensに保存する
 void tokenize(char *p){
@@ -140,7 +20,7 @@ void tokenize(char *p){
             continue;
         }
 
-        if(*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p =='(' || *p == ')'){
+        if(*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p =='(' || *p == ')' || *p == '=' || *p == ';'){
             tokens[i].ty = *p;
             tokens[i].input = p;
             i++;
@@ -156,6 +36,15 @@ void tokenize(char *p){
             continue;
         }
 
+        //アルファベットの小文字ならば、TK_IDENT型のトークンを作成
+        if('a' <= *p && *p <= 'z'){
+            tokens[i].ty = TK_IDENT;
+            tokens[i].input = p;
+            i++;
+            p++;
+            continue;
+        }
+
         fprintf(stderr, "トークナイズできません: %s\n", p);
         exit(1);
     }
@@ -165,8 +54,11 @@ void tokenize(char *p){
 }
 
 //エラーを報告するための関数
-void error(int i){
-    fprintf(stderr, "予期せぬトークンです: %s\n", tokens[i].input);
+__attribute__((noreturn)) void error(char *fmt, ...){
+    va_list ap;
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
+    fprintf(stderr, "\n");
     exit(1);
 }
 
@@ -176,22 +68,41 @@ int main(int argc, char **argv){
         return 1;
     }
 
+    if(strcmp(argv[1], "-test") == 0){
+        runtest();
+        return 0;
+    }
+
     //トークナイズしてパースする
     tokenize(argv[1]);
-    Node* node = expr();
-    
-    //アセンブリの前半部分を出力
+    program();
+ 
     printf(".intel_syntax noprefix\n");
     printf(".global main\n");
     printf("main:\n");
 
-    //抽象構文木を下りながらコード生成
-    gen(node);
 
-    //スタックトップに式全体の値が残っているはずなので
-    //それをRAXにロードして関数からの返り値とする
-    printf("    pop rax\n");
+    //プロローグ
+    //変数26分の領域を確保する
+    printf("    push rbp\n");
+    printf("    mov rbp, rsp\n");
+    printf("    sub rsp, 208\n");
+
+    //先頭の式から順にコード生成
+    for(int i=0; code[i]; i++){
+        gen(code[i]);
+
+        //式の評価結果としてスタックに一つの値が残っている
+        //はずなので、スタックが溢れないようにポップしておく
+        printf("    pop rax\n");
+    }
+
+    //エピローグ
+    //最後の結果がRAXに残っているのでそれが返り値になる
+    printf("    mov rsp, rbp\n");
+    printf("    pop rbp\n");
     printf("    ret\n");
     return 0;
 }
+
 
