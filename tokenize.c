@@ -59,6 +59,24 @@ void tokenize(char *p){
             continue;
         }
 
+        // "&&"
+        if(*p == '&' && *(p+1) == '&'){
+            token->ty = TK_AND;
+            token->input = p;
+            vec_push(tokens, token);
+            p += 2;
+            continue;
+        }
+
+        // "||"
+        if(*p == '|' && *(p+1) == '|'){
+            token->ty = TK_OR;
+            token->input = p;
+            vec_push(tokens, token);
+            p += 2;
+            continue;
+        }
+
         if(isdigit(*p)){
             token->ty = TK_NUM;
             token->input = p;

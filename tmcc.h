@@ -6,6 +6,8 @@ enum{
     TK_IDENT,     //識別子
     TK_EQ,        // '=='
     TK_NE,        // '!='
+    TK_AND,       // '&&'
+    TK_OR,        // '||'
     TK_EOF,       //入力の終わりを表すトークン
 };
 
@@ -26,6 +28,8 @@ enum{
     ND_IDENT,       //識別子のノードの型
     ND_EQ,          // '=='
     ND_NE,          // '!='
+    ND_AND,         // '&&'
+    ND_OR,          // '||'
 };
 
 typedef struct Node{

@@ -73,7 +73,15 @@ void gen(Node *node){
     case ND_NE:
         printf("    cmp rdi, rax\n");
         printf("    setne al\n");
-        printf("    movzb rax, al\n");
+        printf("    movzb rax, al\n"); //al代入して上位56ビットは0クリア
+        break;
+    case ND_AND:
+        printf("    and rdi, rax\n");
+        printf("    mov rax, rdi\n");
+        break;
+    case ND_OR:
+        printf("    or rdi, rax\n");
+        printf("    mov rax, rdi\n");
         break;
     default:
         error("unexpected type of node\n");

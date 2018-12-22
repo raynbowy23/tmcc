@@ -45,6 +45,16 @@ Node *assign(){
         return new_node(ND_NE, lhs, assign());
     }
 
+    if(((Token *)tokens->data[pos])->ty == TK_AND){
+        pos++;
+        return new_node(ND_AND, lhs, assign());
+    }
+
+    if(((Token *)tokens->data[pos])->ty == TK_OR){
+        pos++;
+        return new_node(ND_OR, lhs, assign());
+    }
+
     if(((Token *)tokens->data[pos])->ty == ';'){
         pos++;
         return lhs;
