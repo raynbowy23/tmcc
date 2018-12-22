@@ -1,96 +1,71 @@
 #include "tmcc.h"
+#include "util.h"
 #include <ctype.h>
-#include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-//トークナイズした結果のトークン列はこの配列に保存する
-//100個以上のトークンは来ないものとする
-Token tokens[100];
-Node *code[100];
-
-//pが指している文字列をトークンに分割してtokensに保存する
-void tokenize(char *p){
-    int i=0;
-    while(*p){
-        //空白文字をスキップ
-        if(isspace(*p)){
-            p++;
-            continue;
-        }
-
-        if(*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '%' || *p =='(' || *p == ')' || *p == '=' || *p == ';'){
-            tokens[i].ty = *p;
-            tokens[i].input = p;
-            i++;
-            p++;
-            continue;
-        }
-
-        if(isdigit(*p)){
-            tokens[i].ty = TK_NUM;
-            tokens[i].input = p;
-            tokens[i].val = strtol(p, &p, 10);
-            i++;
-            continue;
-        }
-
-        //アルファベットの小文字ならば、TK_IDENT型のトークンを作成
-        if('a' <= *p && *p <= 'z'){
-            tokens[i].ty = TK_IDENT;
-            tokens[i].input = p;
-            i++;
-            p++;
-            continue;
-        }
-
-        fprintf(stderr, "トークナイズできません: %s\n", p);
-        exit(1);
-    }
-
-    tokens[i].ty = TK_EOF;
-    tokens[i].input = p;
-}
-
-//エラーを報告するための関数
-__attribute__((noreturn)) void error(char *fmt, ...){
-    va_list ap;
-    va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
-    fprintf(stderr, "\n");
-    exit(1);
-}
+Vector *tokens;
+int pos = 0;
+Vector *code;
+Map *var_tab;
+int var_cnt = 0;
 
 int main(int argc, char **argv){
+    bool ast_flg = false;
+    tokens = new_vector();
+    code = new_vector();
+    var_tab = new_map();
+
     if(argc != 2){
         fprintf(stderr, "引数の個数が正しくありません\n");
         return 1;
     }
 
-    if(strcmp(argv[1], "-test") == 0){
+    if(argc >= 2 && strcmp(argv[1], "-test") == 0){
         runtest();
         return 0;
     }
 
+    if(argc >= 2 && strcmp(argv[1], "-ast") == 0){
+        ast_flg = true;
+        argc--;
+        argv++;
+    }
+
+    if(argc != 2){
+        fprintf(stderr, "引数の数が正しくありません");
+        fprintf(stderr, "%s: [-ast] program", argv[0]);
+        fprintf(stderr, "%s: [-test]", argv[0]);
+        return EXIT_FAILURE;
+    }
+
     //トークナイズしてパースする
     tokenize(argv[1]);
-    program();
+    parse();
  
     printf(".intel_syntax noprefix\n");
     printf(".global main\n");
     printf("main:\n");
 
+    if(ast_flg == true){
+        printf("graph name {\n");
+        for(int i=0;i<code->len;i++)
+            p_tree((Node *)code->data[i]);
+        printf("}\n");
+        return EXIT_SUCCESS;
+    }
 
     //プロローグ
     //変数26分の領域を確保する
     printf("    push rbp\n");
     printf("    mov rbp, rsp\n");
-    printf("    sub rsp, 208\n");
+    printf("    sub rsp, %d\n", var_cnt * 8);
 
     //先頭の式から順にコード生成
-    for(int i=0; code[i]; i++){
-        gen(code[i]);
+    for(int i=0; i<code->len; i++){
+        gen((Node *)code->data[i]);
 
         //式の評価結果としてスタックに一つの値が残っている
         //はずなので、スタックが溢れないようにポップしておく
@@ -102,7 +77,7 @@ int main(int argc, char **argv){
     printf("    mov rsp, rbp\n");
     printf("    pop rbp\n");
     printf("    ret\n");
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 

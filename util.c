@@ -1,12 +1,13 @@
-#include "tmcc.h"
+#include "util.h"
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 Vector *new_vector(){
     Vector *vec = malloc(sizeof(Vector));
-    vec->data = malloc(sizeof(void *) * 16);
     vec->capacity = 16;
+    vec->data = malloc(sizeof(void *) * vec->capacity);
     vec->len = 0;
     return vec;
 }
@@ -15,6 +16,8 @@ void vec_push(Vector *vec, void *elem){
     if(vec->capacity == vec->len){
         vec->capacity *= 2;
         vec->data = realloc(vec->data, sizeof(void *) * vec->capacity);
+        if(vec->data == NULL)
+            error("failed to realloc()\n");
     }
     vec->data[vec->len++] = elem;
 }
@@ -32,8 +35,24 @@ void map_put(Map *map, char *key, void *val){
 }
 
 void *map_get(Map *map, char *key){
-    for(int i=map->keys->len - 1; i>=0; i--)
-        if(strcmp(map->keys->data[i], key) == 0)
+    for(int i=map->keys->len - 1; i>=0; i--){
+        if(strcmp(map->keys->data[i], key) == 0){
             return map->vals->data[i];
+        }
+    }
     return NULL;
+}
+
+int *intdup(int n){
+    int *num = malloc(sizeof(int));
+    *num = n;
+    return num;
+}
+
+_Noreturn void error(char *fmt, ...){
+    va_list ap;
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
+    fprintf(stderr, "\n");
+    exit(1);
 }

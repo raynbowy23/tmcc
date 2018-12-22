@@ -1,10 +1,14 @@
 #include "tmcc.h"
+#include "util.h"
 #include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
 
 void gen_lval(Node *node){
     if(node->ty == ND_IDENT){
+        int *num = (int *)map_get(var_tab, node->name);
         printf("    mov rax, rbp\n");
-        printf("    sub rax, %d\n", ('z' - node->name + 1) * 8);
+        printf("    sub rax, %d\n", (*num + 1) * 8);
         printf("    push rax\n");
         return;
     }
@@ -60,6 +64,19 @@ void gen(Node *node){
         printf("    mov rdx, 0\n");
         printf("    div rdi\n");
         printf("    mov rax, rdx\n");
+        break;
+    case ND_EQ:
+        printf("    cmp rdi, rax\n");
+        printf("    sete al\n");
+        printf("    movzb rax, al\n");
+        break;
+    case ND_NE:
+        printf("    cmp rdi, rax\n");
+        printf("    setne al\n");
+        printf("    movzb rax, al\n");
+        break;
+    default:
+        error("unexpected type of node\n");
     }
 
     printf("    push rax\n");
