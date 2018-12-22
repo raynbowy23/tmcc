@@ -82,7 +82,11 @@ Node *mul(){
     }
     if (tokens[pos].ty == ('/')) {
         pos++;
-    return new_node('/', lhs, mul());
+        return new_node('/', lhs, mul());
+    }
+    if (tokens[pos].ty == ('%')) {
+        pos++;
+        return new_node('%', lhs, mul());
     }
     error("mul: 想定しないトークンです: %s", tokens[pos].input);
 }
