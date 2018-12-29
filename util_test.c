@@ -43,6 +43,9 @@ void test_map(){
 
     map_put(map, "foo", intdup(6));
     expect(__LINE__, 6, *(int *)map_get(map, "foo"));
+
+    expect(__LINE__, true, map_exists(map, "foo"));
+    expect(__LINE__, false, map_exists(map, "baz"));
 }
 
 void runtest(){

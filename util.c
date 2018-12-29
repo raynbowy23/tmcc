@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 Vector *new_vector(){
     Vector *vec = malloc(sizeof(Vector));
@@ -41,6 +42,14 @@ void *map_get(Map *map, char *key){
         }
     }
     return NULL;
+}
+
+//存在するかどうか
+bool map_exists(Map *map, char *key){
+    for(int i=0;i<map->keys->len;i++)
+        if(!strcmp(map->keys->data[i], key))
+            return true;
+    return false;
 }
 
 int *intdup(int n){
