@@ -126,7 +126,7 @@ static Node *mul(){
     for(;;){
         Token *token = tokens->data[pos];
         int op = token->ty;
-        if(op != '*' && op != '/')
+        if(op != '*' && op != '/' && op != '%')
             return lhs;
         pos++;
         lhs = new_node(op, lhs, term());

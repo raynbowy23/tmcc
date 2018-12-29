@@ -20,7 +20,7 @@ static int gen_expr(Node *node){
         return reg;
     }
 
-    assert(strchr("+-*/", node->ty));
+    assert(strchr("+-*/\%", node->ty));
 
     int lhs = gen_expr(node->lhs);
     int rhs = gen_expr(node->rhs);

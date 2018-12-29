@@ -79,12 +79,13 @@ void gen_x86(Vector *irv){
             printf("    div %s\n", regs[ir->rhs]);
             printf("    mov %s, rax\n", regs[ir->lhs]);
             break;
-        // case '%':
-        //     printf("    mov rax, %s\n", regs[ir->lhs]);
-        //     printf("    cqo\n");
-        //     printf("    div %s\n", regs[ir->rhs]);
-        //     printf("    mov %s, rdi\n", regs[ir->lhs]);
-        //     break;
+        case '%':
+            printf("    mov rax, %s\n", regs[ir->lhs]);
+            printf("    cqo\n");
+            printf("    div %s\n", regs[ir->rhs]);
+            //除算の余りはrdxに格納される
+            printf("    mov %s, rdx\n", regs[ir->lhs]);
+            break;
         // case ND_EQ:
         //     printf("    cmp rdi, rax\n");
         //     printf("    sete al\n");

@@ -21,7 +21,6 @@ static Token *add_token(Vector *vec, int ty, char *input){
 static Vector *scan(char *p){
     Vector *vec = new_vector();
 
-    int i = 0;
     while(*p){
 
         //空白文字をスキップ
@@ -30,9 +29,8 @@ static Vector *scan(char *p){
             continue;
         }
 
-        if(strchr("+-*/;", *p)){
+        if(strchr("+-*/\%;", *p)){
             add_token(vec, *p, p);
-            i++;
             p++;
             continue;
         }
@@ -104,7 +102,6 @@ static Vector *scan(char *p){
             //add_token
             // add_token(vec, TK_IDENT, p);
             add_token(vec, ty, p);
-            i++;
             p += len;
             continue;
         }
@@ -112,7 +109,6 @@ static Vector *scan(char *p){
         if(isdigit(*p)){
             Token *token = add_token(vec, TK_NUM, p);
             token->val = strtol(p, &p, 10);
-            i++;
             continue;
         }
 
