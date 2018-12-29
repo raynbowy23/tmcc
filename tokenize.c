@@ -5,108 +5,128 @@
 #include <stdlib.h>
 #include <string.h>
 
-//pが指している文字列をトークンに分割してtokensに保存する
-void tokenize(char *p){
-    Token *token;
+Map *keywords;
 
+//Tokenizer
+static Token *add_token(Vector *vec, int ty, char *input){
+    Token *token = malloc(sizeof(Token));
+    token->ty = ty;
+    token->input = input;
+    vec_push(vec, token);
+    return token;
+}
+
+//pが指している文字列をトークンに分割してtokensに保存する
+// void tokenize(char *p){
+static Vector *scan(char *p){
+    Vector *vec = new_vector();
+
+    int i = 0;
     while(*p){
+
         //空白文字をスキップ
         if(isspace(*p)){
             p++;
             continue;
         }
 
-        token = malloc(sizeof(Token));
-
-        switch(*p){
-        case '+':
-        case '-':
-        case '*':
-        case '/':
-        case '%':
-        case '(':
-        case ')':
-        case ';':
-            token->ty = *p;
-            token->input = p;
-            vec_push(tokens, token);
+        if(strchr("+-*/;", *p)){
+            add_token(vec, *p, p);
+            i++;
             p++;
             continue;
         }
+        // switch(*p){
+        // case '+':
+        // case '-':
+        // case '*':
+        // case '/':
+        // case '%':
+        // case '(':
+        // case ')':
+        // case ';':
+        //     token->ty = *p;
+        //     token->input = p;
+        //     vec_push(tokens, token);
+        //     p++;
+        //     continue;
+        // }
 
         // "=", "=="
-        if(*p == '='){
-            if(*(p+1) == '='){
-                token->ty = TK_EQ;
-                token->input = p;
-                vec_push(tokens, token);
-                p += 2;
-            }else{ 
-                token->ty = *p;
-                token->input = p;
-                vec_push(tokens, token);
-                p++;
-            }
-            continue;
-        }
+        // if(*p == '='){
+        //     if(*(p+1) == '='){
+        //         add_token(vec, TK_EQ, p);
+        //         p += 2;
+        //     }else{ 
+        //         add_token(vec, *p, p);
+        //         p++;
+        //     }
+        //     continue;
+        // }
 
-        // "!="
-        if(*p == '!' && *(p+1) == '='){
-            token->ty = TK_NE;
-            token->input = p;
-            vec_push(tokens, token);
-            p += 2;
-            continue;
-        }
+        // // "!="
+        // if(*p == '!' && *(p+1) == '='){
+        //     add_token(vec, TK_NE, p);
+        //     p += 2;
+        //     continue;
+        // }
 
-        // "&&"
-        if(*p == '&' && *(p+1) == '&'){
-            token->ty = TK_AND;
-            token->input = p;
-            vec_push(tokens, token);
-            p += 2;
-            continue;
-        }
+        // // "&&"
+        // if(*p == '&' && *(p+1) == '&'){
+        //     add_token(vec, TK_AND, p);
+        //     p += 2;
+        //     continue;
+        // }
 
-        // "||"
-        if(*p == '|' && *(p+1) == '|'){
-            token->ty = TK_OR;
-            token->input = p;
-            vec_push(tokens, token);
-            p += 2;
-            continue;
-        }
+        // // "||"
+        // if(*p == '|' && *(p+1) == '|'){
+        //     add_token(vec, TK_OR, p);
+        //     p += 2;
+        //     continue;
+        // }
 
-        if(isdigit(*p)){
-            token->ty = TK_NUM;
-            token->input = p;
-            token->val = strtol(p, &p, 10);
-            vec_push(tokens, token);
-            continue;
-        }
-
+        //Keyword
         //アルファベットの小文字ならば、TK_IDENT型のトークンを作成
-        if(isalpha(*p)){
-
+        if(isalpha(*p) || *p == '_'){
             int len = 1;
-            for(char *q = p + 1; isalnum(*q); q++)
+            while(isalpha(p[len]) || isdigit(p[len]) || p[len] == '_')
                 len++;
-            token->name = malloc(sizeof(char) * (len+1));
-            strncpy(token->name, p, len+1);
-            token->name[len] = '\0';
+            // for(char *q = p + 1; isalnum(*q); q++)
+            //     len++;
+            // token->name = malloc(sizeof(char) * (len+1));
+            // strncpy(token->name, p, len+1);
+            // token->name[len] = '\0';
+            char *name = strndup(p, len);
+            int ty = (intptr_t)map_get(keywords, name);
+            if(!ty)
+                error("unknown identifier: %s", name);
 
-            token->ty = TK_IDENT;
-            token->input = p;
-            vec_push(tokens, token);
+            //add_token
+            // add_token(vec, TK_IDENT, p);
+            add_token(vec, ty, p);
+            i++;
             p += len;
             continue;
         }
 
-        fprintf(stderr, "トークナイズできません: %s\n", p);
-        exit(1);
+        if(isdigit(*p)){
+            Token *token = add_token(vec, TK_NUM, p);
+            token->val = strtol(p, &p, 10);
+            i++;
+            continue;
+        }
+
+        // fprintf(stderr, "トークナイズできません: %s\n", p);
+        // exit(1);
+        error("cannot tokenize: %s", p);
     }
-    token = malloc(sizeof(Token));
-    token->ty = TK_EOF;
-    token->input = p;
-    vec_push(tokens, token);
+    add_token(vec, TK_EOF, p);
+    return vec;
+}
+
+Vector *tokenize(char *p){
+    keywords = new_map();
+    map_put(keywords, "return", (void *)TK_RETURN);
+
+    return scan(p);
 }

@@ -40,17 +40,17 @@ try_fail() {
     fi
 }
 
-try 42 '42;'
-try 41 ' 12 + 34 - 5;'
+try 42 'return 42;'
+try 41 'return 12 + 34 - 5;'
 
-try 47 "5+6*7;"
-try 40 "10*(3+1);"
-try 3 "9%6;"
-try 15 "5*(9-6);"
-try 4 "(3+5)/2;"
-try 1 "2==2;"
-try 1 "1&&1;"
-try 0 "0||0;"
+try 47 "return 5+6*7;"
+# try 40 "return 10*(3+1);"
+# try 3 "return 9%6;"
+# try 15 "return 5*(9-6);"
+# try 4 "return (3+5)/2;"
+# try 1 "return 2==2;"
+# try 1 "return 1&&1;"
+# try 0 "return 0||0;"
 
 try_fail '();'
 try_fail '1+(2+ );'
