@@ -4,12 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-// void program();
-// Node *assign();
-// Node *expr();
-// Node *mul();
-// Node *term();
-
 static Vector *tokens;
 static int pos;
 
@@ -20,6 +14,14 @@ static void expect(int ty){
     pos++;
 }
 
+static bool consume(int ty){
+    Token *token = tokens->data[pos];
+    if(token->ty != ty)
+        return false;
+    pos++;
+    return true;
+}
+
 /*
 program: assign program'
 program': ε | assign program'
@@ -28,15 +30,6 @@ program': ε | assign program'
 //     while(((Token *)(tokens->data[pos]))->ty != TK_EOF)
 //         vec_push(code, assign());
 // }
-
-/*
-assign: expr assign' ";"
-assign': ε | "="  expr assign'
-assign':     "==" expr assign'
-assign':     "!=" expr assign'
-*/
-// Node *assign(){
-//     Node *lhs = expr();
 
 //     if(((Token *)tokens->data[pos])->ty == '='){
 //         pos++;
@@ -86,13 +79,26 @@ static Node *new_node(int op, Node *lhs, Node *rhs) {
 /*
 term: NUMBER | IDENT | "(" expr ")"
  */
-Node *term() {
-    Token *token = tokens->data[pos];
-    if (token->ty != TK_NUM)
-        error("number expected, but got %s", token->input);
-    pos++;
+static Node *term() {
+    Node *node = malloc(sizeof(Node));
+    Token *token = tokens->data[pos++];
+
+    // if (token->ty != TK_NUM)
+    //     error("number expected, but got %s", token->input);
+    // pos++;
         // return new_node_num(token->val);
-    // if (token->ty == TK_IDENT){
+
+    if(token->ty == TK_NUM){
+        node->ty = ND_NUM;
+        node->val = token->val;
+        return node;
+    }
+
+    if (token->ty == TK_IDENT){
+        node->ty = ND_IDENT;
+        node->name = token->name;
+        return node;
+    }
     //     if(map_get(var_tab, token->name) == NULL){
     //         int *num = (int *)malloc(sizeof(int));
     //         *num = var_cnt++;
@@ -110,10 +116,7 @@ Node *term() {
     //     return node;
     //  }
 
-    Node *node = malloc(sizeof(Node));
-    node->ty = ND_NUM;
-    node->val = token->val;
-    return node;
+    error("number expected, but got %s", token->input);
     //  error("数値でも開きカッコでもないトークンです: %s", ((Token *)tokens->data[pos])->input);
 }
 /*
@@ -164,6 +167,19 @@ static Node *expr(){
     }
 }
 
+/*
+assign: expr assign' ";"
+assign': ε | "="  expr assign'
+assign':     "==" expr assign'
+assign':     "!=" expr assign'
+*/
+static Node *assign(){
+    Node *lhs = expr();
+
+    if(consume('='))
+        return new_node('=', lhs, expr());
+    return lhs;
+}
 
 static Node *stmt(){
     Node *node = malloc(sizeof(Node));
@@ -180,10 +196,10 @@ static Node *stmt(){
         if(token->ty == TK_RETURN){
             pos++;
             e->ty = ND_RETURN;
-            e->expr = expr();
+            e->expr = assign();
         }else{
             e->ty = ND_EXPR_STMT;
-            e->expr = expr();
+            e->expr = assign();
         }
 
         vec_push(node->stmts, e);

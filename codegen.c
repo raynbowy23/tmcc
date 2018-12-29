@@ -4,18 +4,19 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-// void gen_lval(Node *node){
-//     if(node->ty == ND_IDENT){
-//         int *num = (int *)map_get(var_tab, node->name);
-//         printf("    mov rax, rbp\n");
-//         printf("    sub rax, %d\n", (*num + 1) * 8);
-//         printf("    push rax\n");
-//         return;
-//     }
-//     error("代入の左辺値が変数ではありません");
-// }
+static char *gen_label(){
+    static int n;
+    char buf[10];
+    sprintf(buf, ".L%d", n++);
+    return strdup(buf);
+}
 
 void gen_x86(Vector *irv){
+    char *ret = gen_label();
+
+    //rbpはスタック内のアクセスとして使う
+    printf("    push rbp\n");       //base pointer
+    printf("    mov rbp, rsp\n");   //stack pointer
     
     for(int i=0; i<irv->len; i++){
 
@@ -60,7 +61,22 @@ void gen_x86(Vector *irv){
             break;
         case IR_RETURN:
             printf("    mov rax, %s\n", regs[ir->lhs]);
-            printf("    ret\n");
+            printf("    jmp %s\n", ret);
+            break;
+        case IR_ALLOCA:
+            //右辺分のメモリを空ける
+            if(ir->rhs)
+                printf("    sub rsp, %d\n", ir->rhs);
+            printf("    mov %s, rsp\n", regs[ir->lhs]);
+            break;
+        case IR_LOAD:
+            //アドレスアクセス。右辺レジスタが保持しているアドレスの情報を左辺レジスタに移動する
+            //つまりメモリからレジスタへコピー
+            printf("    mov %s, [%s]\n", regs[ir->lhs], regs[ir->rhs]);
+            break;
+        case IR_STORE:
+            //レジスタからメモリへコピー
+            printf("    mov [%s], %s\n", regs[ir->lhs], regs[ir->rhs]);
             break;
         case '+':
             printf("    add %s, %s\n", regs[ir->lhs], regs[ir->rhs]);
@@ -110,4 +126,12 @@ void gen_x86(Vector *irv){
             assert(0 && "unknown operator");
         }
     }
+
+    //ここの意味がよくわからない
+    //ベースポインタの上から２つスタックポインタに代入して残りのベースポインタを出力している
+    printf("    %s:\n", ret);
+    printf("    mov rsp, rbp\n");
+    printf("    mov rsp, rbp\n");
+    printf("    pop rbp\n");
+    printf("    ret\n");
 }

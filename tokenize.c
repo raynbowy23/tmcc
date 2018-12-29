@@ -29,7 +29,7 @@ static Vector *scan(char *p){
             continue;
         }
 
-        if(strchr("+-*/\%;", *p)){
+        if(strchr("+-*/\%;=", *p)){
             add_token(vec, *p, p);
             p++;
             continue;
@@ -83,7 +83,7 @@ static Vector *scan(char *p){
         //     continue;
         // }
 
-        //Keyword
+        //Identifier
         //アルファベットの小文字ならば、TK_IDENT型のトークンを作成
         if(isalpha(*p) || *p == '_'){
             int len = 1;
@@ -97,11 +97,11 @@ static Vector *scan(char *p){
             char *name = strndup(p, len);
             int ty = (intptr_t)map_get(keywords, name);
             if(!ty)
-                error("unknown identifier: %s", name);
+                ty = TK_IDENT;
 
             //add_token
-            // add_token(vec, TK_IDENT, p);
-            add_token(vec, ty, p);
+            Token *token = add_token(vec, ty, p);
+            token->name = name;
             p += len;
             continue;
         }

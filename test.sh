@@ -46,6 +46,8 @@ try 41 'return 12 + 34 - 5;'
 try 47 "return 5+6*7;"
 # try 40 "return 10*(3+1);"
 try 3 "return 9%6;"
+try 2 'a=2; return a;'
+try 10 'a=2; b=3+2; return a*b;'
 # try 15 "return 5*(9-6);"
 # try 4 "return (3+5)/2;"
 # try 1 "return 2==2;"

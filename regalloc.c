@@ -39,9 +39,13 @@ void alloc_regs(Vector *irv){
 
         switch(ir->op){
         case IR_IMM:
+        case IR_ALLOCA:
+        case IR_RETURN:
             ir->lhs = alloc(ir->lhs);
             break;
         case IR_MOV:
+        case IR_LOAD:
+        case IR_STORE:
         case '+':
         case '-':
         case '*':
@@ -49,9 +53,6 @@ void alloc_regs(Vector *irv){
         case '%':
             ir->lhs = alloc(ir->lhs);
             ir->rhs = alloc(ir->rhs);
-            break;
-        case IR_RETURN:
-            ir->lhs = alloc(ir->lhs);
             break;
         case IR_KILL:
             kill(reg_map[ir->lhs]);

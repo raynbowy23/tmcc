@@ -14,7 +14,7 @@
 //トークンの型を表す値
 enum{
     TK_NUM = 256, //整数トークン
-    // TK_IDENT,     //識別子
+    TK_IDENT,     //識別子
     // TK_EQ,        // '=='
     // TK_NE,        // '!='
     // TK_AND,       // '&&'
@@ -27,7 +27,7 @@ enum{
 typedef struct{
     int ty;      //トークンの型
     int val;     //tyがtk_numの場合、その数値
-    // char *name;  //tyがTK_IDENTの場合その名前
+    char *name;  //tyがTK_IDENTの場合その名前
     char *input; //トークン文字列（エラーメッセージ用）
 }Token;
 
@@ -36,7 +36,7 @@ Vector *tokenize(char *p);
 // parse.c
 enum{
     ND_NUM = 256,   //整数のノードの型
-    // ND_IDENT,       //識別子のノードの型
+    ND_IDENT,       //識別子のノードの型
     // ND_EQ,          // '=='
     // ND_NE,          // '!='
     // ND_AND,         // '&&'
@@ -51,7 +51,7 @@ typedef struct Node{
     struct Node *lhs;   //左辺
     struct Node *rhs;   //右辺
     int val;            //tyがnd_numの場合のみ使う
-    // char *name;          //tyがnd_identの場合のみ使う
+    char *name;          //tyがnd_identの場合のみ使う
     struct Node *expr;  //"return" or expression stmt
     Vector *stmts;      //Compund statement
 }Node;
@@ -61,9 +61,12 @@ Node *parse(Vector *tokens);
 // ir.c
 
 enum{
-    IR_IMM,
+    IR_IMM,     //即値
     IR_MOV,
     IR_RETURN,
+    IR_ALLOCA,
+    IR_LOAD,
+    IR_STORE,
     IR_KILL,
     IR_NOP,
 };
